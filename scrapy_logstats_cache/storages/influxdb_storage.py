@@ -1,20 +1,21 @@
 import logging
-from scrapy.spider import Spider
-from scrapy.settings import Settings
+
 from influxdb import InfluxDBClient
+from scrapy.settings import Settings
+from scrapy.spider import Spider
 
 logger = logging.getLogger(__name__)
 
 
 class InfluxDBCacheStorage:
-    def __init__(self, setttings: Settings):
+    def __init__(self, settings: Settings):
         self.client = None
-        self.dsn = setttings.get('INFLUXDB_DSN')
-        self.host = setttings.get('INFLUXDB_HOST')
-        self.port = setttings.get('INFLUXDB_PORT')
-        self.database = setttings.get('INFLUXDB_DATABASE')
+        self.dsn = settings.get('INFLUXDB_DSN')
+        self.host = settings.get('INFLUXDB_HOST')
+        self.port = settings.get('INFLUXDB_PORT')
+        self.database = settings.get('INFLUXDB_DATABASE')
 
-        self.measurement = setttings.get('INFLUXDB_MEASUREMENT')
+        self.measurement = settings.get('INFLUXDB_MEASUREMENT')
 
     def open_spider(self, spider: Spider):
         if self.dsn:
