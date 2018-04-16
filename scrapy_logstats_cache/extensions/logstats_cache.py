@@ -1,11 +1,15 @@
-from scrapy.utils.misc import load_object
-from twisted.internet import task
+import logging
+from datetime import datetime
+
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.signals import spider_closed
 from scrapy.signals import spider_opened
-from scrapy.crawler import Crawler
-from datetime import datetime
 from scrapy.spider import Spider
+from scrapy.utils.misc import load_object
+from twisted.internet import task
+
+logger = logging.getLogger(__name__)
 
 
 class LogStatsCache:
@@ -17,7 +21,6 @@ class LogStatsCache:
         self.multiplier = 60.0 / self.interval
         self.storage = load_object(settings['LOGSTATS_CACHE_STORAGE'])(settings)
         self.task = None
-        self.log_data = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler):
@@ -54,8 +57,11 @@ class LogStatsCache:
 
         self.pagesprev, self.itemsprev = pages, items
 
+        msg = ("Crawled %(pages)d pages (at %(pagerate)d pages/min), "
+               "scraped %(items)d items (at %(itemrate)d items/min)")
         log_args = {'pages': pages, 'pagerate': prate,
                     'items': items, 'itemrate': irate}
+        logger.info(msg, log_args, extra={'spider': spider})
 
         ts = datetime.utcnow().isoformat()
 
