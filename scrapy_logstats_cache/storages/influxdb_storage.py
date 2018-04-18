@@ -46,7 +46,7 @@ class InfluxDBCacheStorage:
 
     def store_buffer(self, logs_buffer):
         for item in logs_buffer:
-            self.store_log(item)
+            self._store_log(item)
 
     def _store_log(self, log_data):
         points = [{'measurement': self.measurement, **log_data}]
