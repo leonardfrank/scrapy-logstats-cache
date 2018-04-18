@@ -5,7 +5,7 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.signals import spider_closed
 from scrapy.signals import spider_opened
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.misc import load_object
 from twisted.internet import task
 

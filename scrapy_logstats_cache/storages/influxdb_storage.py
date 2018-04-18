@@ -2,8 +2,10 @@ import logging
 
 from influxdb import InfluxDBClient
 from scrapy.settings import Settings
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from twisted.internet import task
+
+from scrapy_logstats_cache.utils import is_version
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +18,8 @@ class InfluxDBCacheStorage:
         self.port = settings.get('INFLUXDB_PORT')
         self.database = settings.get('INFLUXDB_DATABASE')
         self.measurement = settings.get('INFLUXDB_MEASUREMENT')
-        self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 30
-        # self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 3
+        # self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 30
+        self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 3
         self.task = None
 
         self.logs_buffer = []
@@ -49,12 +51,11 @@ class InfluxDBCacheStorage:
     def _store_log(self, log_data):
         points = [{'measurement': self.measurement, **log_data}]
         try:
-            result = self.client.write_points(points)
+            self.client.write_points(points)
         except Exception as exc:
-            logger.debug('{} happened when caching logstats to InfluxDB')
+            logger.info('An exception occurred when caching '
+                        'logstats to InfluxDB: {}'.format(exc))
             self.logs_buffer.append(points)
-        finally:
-            return result
 
     def get_client(self):
         if not self.is_connected:
@@ -67,15 +68,15 @@ class InfluxDBCacheStorage:
                 client.create_database(self.database)
             client.switch_database(self.database)
             self.client = client
-            logger.info(
+            logger.debug(
                 "Reconnect to InfluxDB: {}".format(self.client._baseurl))
         else:
-            logger.info(
+            logger.debug(
                 "Keep connecting to InfluxDB: {}".format(self.client._baseurl))
 
     @property
     def is_connected(self):
         if self.client:
-            return self.client.ping()
-        else:
-            return False
+            result = self.client.ping()
+            return is_version(result)
+        return False
