@@ -3,11 +3,17 @@ from datetime import datetime
 
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
+from scrapy.settings import SETTINGS_PRIORITIES
+from scrapy.settings import Settings
 from scrapy.signals import spider_closed
 from scrapy.signals import spider_opened
 from scrapy.spiders import Spider
 from scrapy.utils.misc import load_object
 from twisted.internet import task
+
+from ..settings import default_settings
+from ..storages.influxdb_storage import InfluxDBCacheStorage
+from ..utils import unfreeze_settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +21,18 @@ logger = logging.getLogger(__name__)
 class LogStatsCache:
     """Log basic scraping stats periodically"""
 
-    def __init__(self, settings, stats, interval=60.0):
+    def __init__(self, settings: Settings, stats, interval: float = 60.0):
         self.stats = stats
-        self.interval = interval
-        self.multiplier = 60.0 / self.interval
-        self.storage = load_object(settings['LOGSTATS_CACHE_STORAGE'])(settings)
+        self.interval: float = interval
+        self.multiplier: float = 60.0 / self.interval
         self.task = None
+
+        with unfreeze_settings(settings) as settings:
+            settings.setmodule(
+                module=default_settings,
+                priority=SETTINGS_PRIORITIES['default'])
+        storage_cls = load_object(settings['LOGSTATS_CACHE_STORAGE'])
+        self.storage: InfluxDBCacheStorage = storage_cls(settings)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler):

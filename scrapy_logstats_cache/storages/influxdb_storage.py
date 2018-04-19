@@ -5,7 +5,7 @@ from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from twisted.internet import task
 
-from scrapy_logstats_cache.utils import is_version
+from ..utils import is_version
 
 logger = logging.getLogger(__name__)
 
@@ -13,16 +13,14 @@ logger = logging.getLogger(__name__)
 class InfluxDBCacheStorage:
     def __init__(self, settings: Settings):
         self.client = None
-        self.dsn = settings.get('INFLUXDB_DSN')
-        self.host = settings.get('INFLUXDB_HOST')
-        self.port = settings.get('INFLUXDB_PORT')
-        self.database = settings.get('INFLUXDB_DATABASE')
-        self.measurement = settings.get('INFLUXDB_MEASUREMENT')
-        # self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 30
-        self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 3
         self.task = None
-
         self.logs_buffer = []
+        self.dsn = settings.get('LOGSTATSCACHE_INFLUXDB_DSN')
+        self.host = settings.get('LOGSTATSCACHE_INFLUXDB_HOST')
+        self.port = settings.get('LOGSTATSCACHE_INFLUXDB_PORT')
+        self.database = settings.get('LOGSTATSCACHE_INFLUXDB_DATABASE')
+        self.measurement = settings.get('LOGSTATSCACHE_INFLUXDB_MEASUREMENT')
+        self.interval = settings.getfloat('LOGSTATS_CACHE_INTERVAL') * 30
 
     def open_spider(self, spider: Spider):
         self.task = task.LoopingCall(self.get_client)
@@ -38,17 +36,17 @@ class InfluxDBCacheStorage:
                          extra={'spider': spider})
             self.client.close()
 
-    def store_log(self, log_data):
+    def store_log(self, log_data: dict):
         if len(self.logs_buffer) > 100:
             self.store_buffer(self.logs_buffer)
         else:
             self._store_log(log_data)
 
-    def store_buffer(self, logs_buffer):
+    def store_buffer(self, logs_buffer: list):
         for item in logs_buffer:
             self._store_log(item)
 
-    def _store_log(self, log_data):
+    def _store_log(self, log_data: dict):
         points = [{'measurement': self.measurement, **log_data}]
         try:
             self.client.write_points(points)
@@ -75,7 +73,7 @@ class InfluxDBCacheStorage:
                 "Keep connecting to InfluxDB: {}".format(self.client._baseurl))
 
     @property
-    def is_connected(self):
+    def is_connected(self) -> bool:
         if self.client:
             result = self.client.ping()
             return is_version(result)
