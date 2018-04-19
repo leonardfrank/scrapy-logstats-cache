@@ -36,25 +36,6 @@ class InfluxDBCacheStorage:
                          extra={'spider': spider})
             self.client.close()
 
-    def store_log(self, log_data: dict):
-        if len(self.logs_buffer) > 100:
-            self.store_buffer(self.logs_buffer)
-        else:
-            self._store_log(log_data)
-
-    def store_buffer(self, logs_buffer: list):
-        for item in logs_buffer:
-            self._store_log(item)
-
-    def _store_log(self, log_data: dict):
-        points = [{'measurement': self.measurement, **log_data}]
-        try:
-            self.client.write_points(points)
-        except Exception as exc:
-            logger.info('An exception occurred when caching '
-                        'logstats to InfluxDB: {}'.format(exc))
-            self.logs_buffer.append(points)
-
     def get_client(self):
         if not self.is_connected:
             if self.dsn:
@@ -71,6 +52,25 @@ class InfluxDBCacheStorage:
         else:
             logger.debug(
                 "Keep connecting to InfluxDB: {}".format(self.client._baseurl))
+
+    def store_log(self, log_data: dict):
+        if len(self.logs_buffer) > 100:
+            self.store_buffer(self.logs_buffer)
+        else:
+            self._store_log(log_data)
+
+    def _store_log(self, log_data: dict):
+        points = [{'measurement': self.measurement, **log_data}]
+        try:
+            self.client.write_points(points)
+        except Exception as exc:
+            logger.info('An exception occurred when caching '
+                        'logstats to InfluxDB: {}'.format(exc))
+            self.logs_buffer.append(points)
+
+    def store_buffer(self, logs_buffer: list):
+        for item in logs_buffer:
+            self._store_log(item)
 
     @property
     def is_connected(self) -> bool:

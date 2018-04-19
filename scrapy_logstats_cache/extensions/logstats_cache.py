@@ -88,5 +88,5 @@ class LogStatsCache:
 
     def spider_closed(self, spider: Spider):
         if self.task and self.task.running:
-            self.storage.close_spider(spider)
             self.task.stop()
+            self.storage.close_spider(spider)
