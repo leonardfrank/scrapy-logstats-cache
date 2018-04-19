@@ -31,6 +31,7 @@ class LogStatsCache:
             settings.setmodule(
                 module=default_settings,
                 priority=SETTINGS_PRIORITIES['default'])
+
         storage_cls = load_object(settings['LOGSTATS_CACHE_STORAGE'])
         self.storage: InfluxDBCacheStorage = storage_cls(settings)
 
@@ -87,5 +88,5 @@ class LogStatsCache:
 
     def spider_closed(self, spider: Spider):
         if self.task and self.task.running:
-            self.task.stop()
             self.storage.close_spider(spider)
+            self.task.stop()
