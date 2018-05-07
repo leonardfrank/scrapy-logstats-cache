@@ -1,0 +1,5 @@
+# Tests requirements
+pytest
+pytest-cov
+pytest-twisted
+testfixtures
